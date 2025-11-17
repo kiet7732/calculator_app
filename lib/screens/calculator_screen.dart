@@ -183,7 +183,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   final List<String> buttons = [
-    'C', '()', '%', '÷',
+    'C', '( )', '%', '÷',
     '7', '8', '9', '×',
     '4', '5', '6', '−',
     '1', '2', '3', '+',
