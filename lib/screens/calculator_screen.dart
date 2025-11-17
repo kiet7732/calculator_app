@@ -29,17 +29,29 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         _shouldReset = false; // Reset cờ
       } 
       else if (buttonText == "CE") {
-        // 2. Nút xóa lùi (Backspace)
+        // [ĐÃ XÓA] - Logic này sẽ được thay thế bằng logic cho "()"
+      }
+      else if (buttonText == "()") {
+        // 2. [MỚI] Xử lý nút ngoặc đơn
         if (_shouldReset) {
-          // Nếu vừa tính xong mà bấm CE thì xóa hết
-          _equation = "0";
+          _equation = "(";
           _result = "0";
           _shouldReset = false;
+        } else if (_equation == "0") {
+          _equation = "(";
         } else {
-          if (_equation.length > 1) {
-            _equation = _equation.substring(0, _equation.length - 1);
+          int openParenCount = '('.allMatches(_equation).length;
+          int closeParenCount = ')'.allMatches(_equation).length;
+          String lastChar = _equation.substring(_equation.length - 1);
+
+          if (openParenCount > closeParenCount && (RegExp(r'[0-9]').hasMatch(lastChar) || lastChar == ')')) {
+            _equation += ')';
           } else {
-            _equation = "0";
+            if (RegExp(r'[0-9]').hasMatch(lastChar) || lastChar == ')') {
+              _equation += '×('; // Tự động thêm phép nhân
+            } else {
+              _equation += '(';
+            }
           }
         }
       } 
@@ -113,6 +125,12 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   void _calculate() {
     try {
       String finalEquation = _equation
+          // Thêm logic để xử lý các trường hợp như (5)2 -> (5)*2
+          .replaceAllMapped(RegExp(r'\)(\d)'), (match) => ')*${match.group(1)}')
+          .replaceAllMapped(RegExp(r'(\d)\('), (match) => '${match.group(1)}*(')
+          // Xử lý trường hợp (a)(b) -> (a)*(b)
+          .replaceAll(')(', ')*(')
+          // Thay thế các ký tự hiển thị bằng ký tự tính toán
           .replaceAll('×', '*')
           .replaceAll('÷', '/')
           .replaceAll('−', '-'); // Đảm bảo dùng dấu trừ chuẩn
@@ -165,7 +183,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   final List<String> buttons = [
-    'C', 'CE', '%', '÷',
+    'C', '()', '%', '÷',
     '7', '8', '9', '×',
     '4', '5', '6', '−',
     '1', '2', '3', '+',
