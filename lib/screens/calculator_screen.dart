@@ -28,32 +28,9 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         _result = "0";
         _shouldReset = false; // Reset cờ
       } 
-      else if (buttonText == "CE") {
-        // [ĐÃ XÓA] - Logic này sẽ được thay thế bằng logic cho "()"
-      }
-      else if (buttonText == "()") {
-        // 2. [MỚI] Xử lý nút ngoặc đơn
-        if (_shouldReset) {
-          _equation = "(";
-          _result = "0";
-          _shouldReset = false;
-        } else if (_equation == "0") {
-          _equation = "(";
-        } else {
-          int openParenCount = '('.allMatches(_equation).length;
-          int closeParenCount = ')'.allMatches(_equation).length;
-          String lastChar = _equation.substring(_equation.length - 1);
-
-          if (openParenCount > closeParenCount && (RegExp(r'[0-9]').hasMatch(lastChar) || lastChar == ')')) {
-            _equation += ')';
-          } else {
-            if (RegExp(r'[0-9]').hasMatch(lastChar) || lastChar == ')') {
-              _equation += '×('; // Tự động thêm phép nhân
-            } else {
-              _equation += '(';
-            }
-          }
-        }
+      else if (buttonText == "( )") {
+        // 2. Xử lý nút ngoặc ()
+        _handleParentheses();
       } 
       else if (buttonText == "=") {
         // 3. Nút Bằng (=) - Tính toán
@@ -125,18 +102,17 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   void _calculate() {
     try {
       String finalEquation = _equation
-          // Thêm logic để xử lý các trường hợp như (5)2 -> (5)*2
-          .replaceAllMapped(RegExp(r'\)(\d)'), (match) => ')*${match.group(1)}')
-          .replaceAllMapped(RegExp(r'(\d)\('), (match) => '${match.group(1)}*(')
-          // Xử lý trường hợp (a)(b) -> (a)*(b)
-          .replaceAll(')(', ')*(')
-          // Thay thế các ký tự hiển thị bằng ký tự tính toán
           .replaceAll('×', '*')
           .replaceAll('÷', '/')
           .replaceAll('−', '-'); // Đảm bảo dùng dấu trừ chuẩn
 
       // Xóa các toán tử thừa ở cuối (VD: "5+" thành "5")
       while (_isOperator(finalEquation.substring(finalEquation.length - 1))) {
+        finalEquation = finalEquation.substring(0, finalEquation.length - 1);
+      }
+
+      // Xóa dấu ngoặc mở thừa ở cuối (VD: "(5+3)(" thành "(5+3)")
+      if (finalEquation.endsWith('(')) {
         finalEquation = finalEquation.substring(0, finalEquation.length - 1);
       }
 
@@ -166,6 +142,36 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     } catch (e) {
       _result = "Lỗi";
       _shouldReset = true;
+    }
+  }
+
+  /// Hàm xử lý logic cho nút ngoặc "()"
+  void _handleParentheses() {
+    if (_shouldReset) {
+      _equation = "(";
+      _result = "0";
+      _shouldReset = false;
+      return;
+    }
+    if (_equation == "0") {
+      _equation = "(";
+      return;
+    }
+
+    int openParenCount = '('.allMatches(_equation).length;
+    int closeParenCount = ')'.allMatches(_equation).length;
+    String lastChar = _equation.substring(_equation.length - 1);
+
+    // Nếu số ngoặc mở > số ngoặc đóng, VÀ ký tự cuối không phải là toán tử hoặc ngoặc mở
+    // thì ưu tiên thêm ngoặc đóng.
+    if (openParenCount > closeParenCount &&
+        !_isOperator(lastChar) &&
+        lastChar != '(') {
+      _equation += ")";
+    } else {
+      // Ngược lại, thêm ngoặc mở. Nếu ký tự cuối là số, thêm phép nhân ẩn.
+      final isNumeric = int.tryParse(lastChar) != null || lastChar == '.';
+      _equation += isNumeric ? "×(" : "(";
     }
   }
 
